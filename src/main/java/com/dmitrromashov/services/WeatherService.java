@@ -1,5 +1,6 @@
 package com.dmitrromashov.services;
 
+import com.dmitrromashov.WeatherSubscription;
 import com.dmitrromashov.WeatherState;
 import com.dmitrromashov.database.DatabaseManager;
 import com.dmitrromashov.network.WeatherNetworkComponent;
@@ -22,8 +23,8 @@ public class WeatherService {
         this.weatherNetworkComponent = weatherNetworkComponent;
     }
 
-    public void addWeatherNotificationToDb(Integer userId, String city, Integer period) throws Exception {
-        databaseManager.addWeatherNotification(userId, city, period);
+    public void addWeatherNotificationToDb(Integer userId, String city, Integer period, String userName) throws Exception {
+        databaseManager.addWeatherNotification(userId, city, period, userName);
     }
 
     public List<String> getWeatherChangeMessages(String city, int period, int userId){
@@ -72,6 +73,7 @@ public class WeatherService {
                 currentWeatherState.setTime(weatherStateTime);
                 currentWeatherState.setWeatherCondition(weatherStateCondition);
                 weatherChanged = true;
+                periodInSeconds -= 3600;
 
             }
         }
@@ -82,7 +84,11 @@ public class WeatherService {
             databaseManager.addKnownWeatherState(userId, city, currentWeatherState.getWeatherCondition(), currentWeatherState.getTime());
         }
 
-
         return messagesList;
+    }
+
+    public List<WeatherSubscription> getAllWeatherSubscriptions(){
+        return databaseManager.getAllWeatherSucscriptions();
+
     }
 }

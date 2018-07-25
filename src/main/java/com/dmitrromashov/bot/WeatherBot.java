@@ -1,5 +1,7 @@
 package com.dmitrromashov.bot;
 
+import com.dmitrromashov.Timer;
+import com.dmitrromashov.WeatherSubscription;
 import com.dmitrromashov.services.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -13,6 +15,7 @@ import org.telegram.telegrambots.exceptions.TelegramApiException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,10 +27,40 @@ public class WeatherBot extends TelegramLongPollingBot {
     private static final String unsubscribeCommandName = "unsubscribe";
 
     private WeatherService weatherService;
+    private Timer notificationTimer;
 
     @Autowired
-    public WeatherBot(WeatherService weatherService) {
+    public WeatherBot(WeatherService weatherService, Timer timer) {
         this.weatherService = weatherService;
+        notificationTimer = timer;
+        startNotificationTimer();
+
+    }
+
+    private void startNotificationTimer(){
+        List<WeatherSubscription> weatherSubscriptions = weatherService.getAllWeatherSubscriptions();
+
+        for (WeatherSubscription weatherSubscription: weatherSubscriptions){
+            int userId = weatherSubscription.getUserId();
+            String city = weatherSubscription.getCity();
+            String userName = weatherSubscription.getUserName();
+            int period = weatherSubscription.getPeriod();
+
+            Runnable runnable = new Runnable() {
+                @Override
+                public void run() {
+                    List<String> weatherChangeList = weatherService.getWeatherChangeMessages(city, period, userId);
+                    if (weatherChangeList.size() != 0){
+                        sendMessagesAboutWeatherChange(weatherChangeList, userId, userName);
+                    }
+
+                }
+            };
+
+            notificationTimer.start(runnable, 0, 3600, TimeUnit.SECONDS);
+
+        }
+
 
     }
 
@@ -68,7 +101,7 @@ public class WeatherBot extends TelegramLongPollingBot {
                 city = matcher.group(1);
                 period = Integer.parseInt(matcher.group(2));
 
-                subscribeToNotifications(chatId, messageId, userId, city, period);
+                subscribeToNotifications(chatId, messageId, userId, city, period, userName);
 
                 List<String> weatherChangeList = weatherService.getWeatherChangeMessages(city, period, userId);
                 if (weatherChangeList.size() != 0){
@@ -81,7 +114,7 @@ public class WeatherBot extends TelegramLongPollingBot {
         }
     }
 
-    private void sendMessagesAboutWeatherChange(List<String> weatherChangeList, Long chatId, String userName){
+    private void sendMessagesAboutWeatherChange(List<String> weatherChangeList, long chatId, String userName){
         SendMessage sendMessage = new SendMessage();
         sendMessage.setChatId(chatId);
         String text = userName;
@@ -107,11 +140,11 @@ public class WeatherBot extends TelegramLongPollingBot {
         }
     }
 
-    private void subscribeToNotifications(Long chatId, Integer messageId, Integer userId, String city, Integer period){
+    private void subscribeToNotifications(Long chatId, Integer messageId, Integer userId, String city, Integer period, String userName){
         boolean notificationAdded = false;
 
         try {
-            weatherService.addWeatherNotificationToDb(userId, city, period);
+            weatherService.addWeatherNotificationToDb(userId, city, period, userName);
             notificationAdded = true;
         } catch (Exception e) {
             e.printStackTrace();

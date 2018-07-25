@@ -55,6 +55,7 @@ public class WeatherNetworkComponent {
 
                     String[] coords = pos.split(" ");
                     cityCoordinates = new CityCoordinates(coords[0], coords[1]);
+                    System.out.println("City = " + city);
                     System.out.println("lat = " + cityCoordinates.getLatitude());
                     System.out.println("lon = " + cityCoordinates.getLongitude());
 
