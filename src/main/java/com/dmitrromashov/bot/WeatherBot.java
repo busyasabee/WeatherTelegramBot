@@ -53,6 +53,7 @@ public class WeatherBot extends TelegramLongPollingBot {
         Integer messageId = subscribeMessage.getMessageId();
         Integer userId = subscribeMessage.getFrom().getId();
         String text = subscribeMessage.getText().trim();
+        String userName = subscribeMessage.getFrom().getUserName();
 
         if (text.equals("subscribe") || text.equals("/subscribe")){
             sendHelpMessageToSubscribe(chatId, messageId);
@@ -61,21 +62,52 @@ public class WeatherBot extends TelegramLongPollingBot {
             Pattern pattern = Pattern.compile(patternStr);
             Matcher matcher = pattern.matcher(text);
             String city;
-            String period;
+            Integer period;
 
             if(matcher.find()){
                 city = matcher.group(1);
-                period = matcher.group(2);
+                period = Integer.parseInt(matcher.group(2));
 
                 subscribeToNotifications(chatId, messageId, userId, city, period);
+
+                List<String> weatherChangeList = weatherService.getWeatherChangeMessages(city, period, userId);
+                if (weatherChangeList.size() != 0){
+                    sendMessagesAboutWeatherChange(weatherChangeList, chatId, userName);
+                }
             } else {
                 sendMessageAboutNotification(chatId, messageId, false);
             }
-        }
 
+        }
     }
 
-    private void subscribeToNotifications(Long chatId, Integer messageId, Integer userId, String city, String period){
+    private void sendMessagesAboutWeatherChange(List<String> weatherChangeList, Long chatId, String userName){
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(chatId);
+        String text = userName;
+        String firstChange = weatherChangeList.get(0);
+        text = text + ", " + firstChange;
+        sendMessage.setText(text);
+
+        try {
+            execute(sendMessage);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+
+        for (int i = 1; i < weatherChangeList.size(); i++) {
+            text = "\n После " + weatherChangeList.get(i);
+            sendMessage.setText(text);
+
+            try {
+                execute(sendMessage);
+            } catch (TelegramApiException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void subscribeToNotifications(Long chatId, Integer messageId, Integer userId, String city, Integer period){
         boolean notificationAdded = false;
 
         try {
@@ -93,9 +125,9 @@ public class WeatherBot extends TelegramLongPollingBot {
         sendMessage.setReplyToMessageId(messageId);
         String text;
         if (notificationAdded){
-            text = "Уведомление было успешно добавлено";
+            text = "Вы были успешно подписаны на уведомления об изменениях погоды";
         } else {
-            text = "При добавлении уведомления возникли проблемы. Пожалуйста, проверьте правильность введённых данных";
+            text = "С подпиской на уведомления возникли проблемы. Пожалуйста, проверьте правильность введённых данных";
         }
         sendMessage.setText(text);
         try {
