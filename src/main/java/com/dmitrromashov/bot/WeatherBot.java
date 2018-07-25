@@ -77,8 +77,36 @@ public class WeatherBot extends TelegramLongPollingBot {
             processStartCommand(incomingMessage);
         } else if (messageText.startsWith(beginCommandSymbol + subscribeCommandName) || messageText.startsWith(subscribeCommandName)){
             processSubscribeCommand(incomingMessage);
+        } else if (messageText.startsWith(beginCommandSymbol + unsubscribeCommandName) || messageText.startsWith(unsubscribeCommandName)){
+            processUnsubscribeCommand(incomingMessage);
         }
 
+    }
+
+    private void processUnsubscribeCommand(Message unsubscribeMessage){
+        Long chatId = unsubscribeMessage.getChatId();
+        Integer messageId = unsubscribeMessage.getMessageId();
+        Integer userId = unsubscribeMessage.getFrom().getId();
+        String text = unsubscribeMessage.getText().trim();
+
+        if (text.equals("unsubscribe") || text.equals("/unsubscribe")){
+            weatherService.unsubscribeUser(userId);
+            sendHelpMessageToUnsubscribe(chatId, messageId);
+        }
+
+    }
+
+    private void sendHelpMessageToUnsubscribe(Long chatId, Integer messageId) {
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(chatId);
+        sendMessage.setReplyToMessageId(messageId);
+        String helpText = "Вы успешно отписались от уведомлений об изменениях погоды";
+        sendMessage.setText(helpText);
+        try {
+            execute(sendMessage);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
     }
 
     private void processSubscribeCommand(Message subscribeMessage) {

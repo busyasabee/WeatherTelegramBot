@@ -24,22 +24,23 @@ public class WeatherService {
     }
 
     public void addWeatherNotificationToDb(Integer userId, String city, Integer period, String userName) throws Exception {
-        databaseManager.addWeatherNotification(userId, city, period, userName);
+        databaseManager.addWeatherSubscription(userId, city, period, userName);
     }
 
     public List<String> getWeatherChangeMessages(String city, int period, int userId){
         List<WeatherState> weatherStates = weatherNetworkComponent.getWeatherStates(city);
         WeatherState knownWeatherState = databaseManager.getKnownWeatherState(userId, city);
+        // Yandex fact weather state
+        WeatherState factWeatherState = weatherStates.get(0);
         WeatherState currentWeatherState;
 
         boolean thereIsKnownState = false;
-        boolean weatherChanged = false;
 
         if (knownWeatherState != null){
             currentWeatherState = knownWeatherState;
             thereIsKnownState = true;
         } else {
-            currentWeatherState = weatherStates.get(0);
+            currentWeatherState = factWeatherState;
         }
 
         int periodInSeconds = period * 3600 ;
@@ -48,7 +49,7 @@ public class WeatherService {
         String messageText = "";
         List<String> messagesList = new ArrayList<>();
 
-        for (int i = 1; i < weatherStates.size(); i++) {
+        for (int i = 0; i < weatherStates.size(); i++) {
             WeatherState weatherState = weatherStates.get(i);
             int weatherStateTime = weatherState.getTime();
             String weatherStateCondition = weatherState.getWeatherCondition();
@@ -72,15 +73,14 @@ public class WeatherService {
                 messagesList.add(messageText);
                 currentWeatherState.setTime(weatherStateTime);
                 currentWeatherState.setWeatherCondition(weatherStateCondition);
-                weatherChanged = true;
                 periodInSeconds -= 3600;
 
             }
         }
 
-        if (thereIsKnownState && weatherChanged){
+        if (thereIsKnownState){
             databaseManager.updateKnownWeatherState(userId, city, currentWeatherState.getWeatherCondition(), currentWeatherState.getTime());
-        } else if (weatherChanged){
+        } else {
             databaseManager.addKnownWeatherState(userId, city, currentWeatherState.getWeatherCondition(), currentWeatherState.getTime());
         }
 
@@ -89,6 +89,12 @@ public class WeatherService {
 
     public List<WeatherSubscription> getAllWeatherSubscriptions(){
         return databaseManager.getAllWeatherSucscriptions();
+
+    }
+
+    public void unsubscribeUser(int userId) {
+        databaseManager.deleteUserSubscription(userId);
+        databaseManager.deleteUserWeatherState(userId);
 
     }
 }

@@ -119,7 +119,7 @@ public class DatabaseManager {
         }
     }
 
-    public void addWeatherNotification(Integer userId, String city, int period, String userName) throws Exception {
+    public void addWeatherSubscription(Integer userId, String city, int period, String userName) throws Exception {
         String query = "INSERT INTO " +
                 "" + weatherSubscriptionTableName + "(userId, city, period, userName)" +
                 "VALUES (?,?,?, ?);";
@@ -159,5 +159,29 @@ public class DatabaseManager {
 
         return weatherSubscriptions;
 
+    }
+
+    public void deleteUserSubscription(int userId) {
+        String query = "DELETE FROM " +
+                "" + weatherSubscriptionTableName + " WHERE userId = ?;";
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setInt(1, userId);
+            preparedStatement.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void deleteUserWeatherState(int userId) {
+        String query = "DELETE FROM " +
+                "" + knownWeatherTableName + " WHERE userId = ?;";
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setInt(1, userId);
+            preparedStatement.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }
