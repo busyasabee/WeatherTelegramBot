@@ -27,7 +27,7 @@ public class WeatherService {
         databaseManager.addWeatherSubscription(userId, city, period, userName);
     }
 
-    public List<String> getWeatherChangeMessages(String city, int period, int userId){
+    public List<String> getWeatherChangeMessages(String city, int period, int userId) {
         List<WeatherState> weatherStates = weatherNetworkComponent.getWeatherStates(city);
         WeatherState knownWeatherState = databaseManager.getKnownWeatherState(userId, city);
         // Yandex fact weather state
@@ -37,19 +37,24 @@ public class WeatherService {
         boolean thereIsKnownState = false;
 
         if (knownWeatherState != null){
+            thereIsKnownState = true;
+        }
+
+        if (thereIsKnownState && (knownWeatherState.getTime() > factWeatherState.getTime())) {
             currentWeatherState = knownWeatherState;
             thereIsKnownState = true;
         } else {
             currentWeatherState = factWeatherState;
         }
 
-        int periodInSeconds = period * 3600 ;
+
+        int periodInSeconds = period * 3600;
 
 
         String messageText = "";
         List<String> messagesList = new ArrayList<>();
 
-        for (int i = 0; i < weatherStates.size(); i++) {
+        for (int i = 1; i < weatherStates.size(); i++) {
             WeatherState weatherState = weatherStates.get(i);
             int weatherStateTime = weatherState.getTime();
             String weatherStateCondition = weatherState.getWeatherCondition();
@@ -59,9 +64,9 @@ public class WeatherService {
 
             if (weatherStateTime > currentTimeInSeconds
                     && weatherStateTime <= currentTimeInSeconds + periodInSeconds
-                    && !currentWeatherCondition.equals(weatherStateCondition)){
+                    && !currentWeatherCondition.equals(weatherStateCondition)) {
                 String hourWord;
-                if (period == 1){
+                if (period == 1) {
                     hourWord = "часа";
                 } else {
                     hourWord = "часов";
@@ -71,9 +76,9 @@ public class WeatherService {
                         " произойдёт изменение погоды на \"" + weatherStateCondition + "\"";
 
                 messagesList.add(messageText);
+                periodInSeconds -= weatherStateTime - currentTimeInSeconds;
                 currentWeatherState.setTime(weatherStateTime);
                 currentWeatherState.setWeatherCondition(weatherStateCondition);
-                periodInSeconds -= 3600;
 
             }
         }
@@ -87,7 +92,7 @@ public class WeatherService {
         return messagesList;
     }
 
-    public List<WeatherSubscription> getAllWeatherSubscriptions(){
+    public List<WeatherSubscription> getAllWeatherSubscriptions() {
         return databaseManager.getAllWeatherSucscriptions();
 
     }

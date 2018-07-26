@@ -24,13 +24,13 @@ public class WeatherNetworkComponent {
     private WeatherConditionTranslation weatherConditionTranslation;
 
     @Autowired
-    public WeatherNetworkComponent(WeatherConditionTranslation weatherConditionTranslation){
+    public WeatherNetworkComponent(WeatherConditionTranslation weatherConditionTranslation) {
         this.weatherConditionTranslation = weatherConditionTranslation;
     }
 
-    private CityCoordinates getCityCoordinates(String city){
+    private CityCoordinates getCityCoordinates(String city) {
         CityCoordinates cityCoordinates = null;
-        try (CloseableHttpClient client = HttpClients.createDefault();){
+        try (CloseableHttpClient client = HttpClients.createDefault();) {
             String baseUrl = "https://geocode-maps.yandex.ru/1.x/";
             String format = "json";
             String url = baseUrl + "?format=" + format + "&geocode=" + city;
@@ -38,8 +38,8 @@ public class WeatherNetworkComponent {
             HttpEntity httpEntity;
             try (CloseableHttpResponse response = client.execute(httpGet)) {
                 int statusCode = response.getStatusLine().getStatusCode();
-                System.out.println("Response status " + statusCode);
-                if (statusCode == 200){
+
+                if (statusCode == 200) {
                     httpEntity = response.getEntity();
                     String responseString = EntityUtils.toString(httpEntity, "UTF-8");
 
@@ -55,16 +55,8 @@ public class WeatherNetworkComponent {
 
                     String[] coords = pos.split(" ");
                     cityCoordinates = new CityCoordinates(coords[0], coords[1]);
-                    System.out.println("City = " + city);
-                    System.out.println("lat = " + cityCoordinates.getLatitude());
-                    System.out.println("lon = " + cityCoordinates.getLongitude());
-
-                } else {
-                    System.out.println("Error happened during request coordinates");
                 }
-
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -72,11 +64,11 @@ public class WeatherNetworkComponent {
         return cityCoordinates;
     }
 
-    private List<WeatherState> requestWeatherStates(CityCoordinates cityCoordinates){
+    private List<WeatherState> requestWeatherStates(CityCoordinates cityCoordinates) {
         String apiKey = "62d591b5-8f51-40d7-a6c6-a1ecb55beb16";
         List<WeatherState> weatherStates = new ArrayList<>();
 
-        try (CloseableHttpClient client = HttpClients.createDefault();){
+        try (CloseableHttpClient client = HttpClients.createDefault();) {
             String baseUrl = "https://api.weather.yandex.ru/v1/forecast";
             String lat = cityCoordinates.getLatitude();
             String lon = cityCoordinates.getLongitude();
@@ -90,8 +82,8 @@ public class WeatherNetworkComponent {
 
             try (CloseableHttpResponse response = client.execute(httpGet)) {
                 int statusCode = response.getStatusLine().getStatusCode();
-                System.out.println("Response status " + statusCode);
-                if (statusCode == 200){
+
+                if (statusCode == 200) {
                     httpEntity = response.getEntity();
                     String responseString = EntityUtils.toString(httpEntity, "UTF-8");
 
@@ -103,7 +95,6 @@ public class WeatherNetworkComponent {
                     int factTime = fact.getInt("obs_time");
                     weatherStates.add(new WeatherState(factCondition, factTime));
 
-                    System.out.println("Fact condition = " + factCondition + " fact_time = " + factTime);
                     JSONArray forecasts = jsonResponse
                             .getJSONArray("forecasts");
                     JSONArray hours = forecasts
@@ -118,24 +109,17 @@ public class WeatherNetworkComponent {
                         condition = weatherConditionTranslation.getTranslation(condition);
                         WeatherState weatherState = new WeatherState(condition, hourTime);
                         weatherStates.add(weatherState);
-                        System.out.println("hour_ts = " + hourTime + " condition = " + condition);
                     }
-
-                } else {
-                    System.out.println("Error happened during request");
                 }
-
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         return weatherStates;
-
     }
 
-    public List<WeatherState> getWeatherStates(String city){
+    public List<WeatherState> getWeatherStates(String city) {
         CityCoordinates cityCoordinates = getCityCoordinates(city);
         return requestWeatherStates(cityCoordinates);
 

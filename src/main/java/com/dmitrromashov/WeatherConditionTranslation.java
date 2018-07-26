@@ -23,7 +23,6 @@ public class WeatherConditionTranslation {
                         new FileInputStream(FILE_NAME), StandardCharsets.UTF_8))){
             String line;
             while ((line = reader.readLine()) != null) {
-                System.out.println(line);
                 String[] splittedLine = line.split(" — ");
                 String eng = splittedLine[0].trim();
                 String rus = splittedLine[1].trim();

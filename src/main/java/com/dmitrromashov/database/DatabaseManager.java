@@ -4,6 +4,7 @@ import com.dmitrromashov.WeatherSubscription;
 import com.dmitrromashov.WeatherState;
 import org.springframework.stereotype.Repository;
 
+import javax.annotation.PreDestroy;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +38,8 @@ public class DatabaseManager {
                     + "userId INT,"
                     + "city VARCHAR(50),"
                     + "period INT,"
-                    + "userName VARCHAR(50))";
+                    + "userName VARCHAR(50)," +
+                    "UNIQUE (userId, city))";
             createTableStatement.execute(weatherSubscriptionCreateTableQuery);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -54,7 +56,8 @@ public class DatabaseManager {
                     + "userId INT,"
                     + "city VARCHAR(50),"
                     + "condition VARCHAR(50),"
-                    + "time INT);";
+                    + "time INT," +
+                    "UNIQUE (userId, city));";
 
             createTableStatement.execute(knownWeatherCreateTableQuery);
         } catch (SQLException e) {
@@ -113,7 +116,6 @@ public class DatabaseManager {
             preparedStatement.setInt(3, userId);
             preparedStatement.setString(4, city);
             int rowUpdated = preparedStatement.executeUpdate();
-            System.out.println("Updated " + rowUpdated + " rows");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -139,7 +141,7 @@ public class DatabaseManager {
     public List<WeatherSubscription> getAllWeatherSucscriptions() {
         List<WeatherSubscription> weatherSubscriptions = new ArrayList<>();
 
-        String query = "SELECT userId, city, period from " + weatherSubscriptionTableName + ";";
+        String query = "SELECT userId, city, period, userName from " + weatherSubscriptionTableName + ";";
 
 
         try (Statement statement = connection.createStatement()) {
@@ -148,8 +150,9 @@ public class DatabaseManager {
                     int userId = resultSet.getInt("userId");
                     String city = resultSet.getString("city");
                     int period = resultSet.getInt("period");
+                    String userName = resultSet.getString("userName");
 
-                    WeatherSubscription weatherSubscription = new WeatherSubscription(userId, city, period);
+                    WeatherSubscription weatherSubscription = new WeatherSubscription(userId, city, period, userName);
                     weatherSubscriptions.add(weatherSubscription);
                 }
             }
@@ -180,6 +183,15 @@ public class DatabaseManager {
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setInt(1, userId);
             preparedStatement.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @PreDestroy
+    private void destroy(){
+        try {
+            connection.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }

@@ -17,7 +17,6 @@ public class Timer {
 
     @PreDestroy
     private void destroy(){
-        System.out.println("Timer destroy");
         scheduledExecutorService.shutdown();
         try {
             scheduledExecutorService.awaitTermination(10, TimeUnit.MINUTES);

@@ -6,10 +6,11 @@ public class WeatherSubscription {
     private String userName;
     private int period;
 
-    public WeatherSubscription(int userId, String city, int period) {
+    public WeatherSubscription(int userId, String city, int period, String userName) {
         this.userId = userId;
         this.city = city;
         this.period = period;
+        this.userName = userName;
     }
 
     public int getUserId() {

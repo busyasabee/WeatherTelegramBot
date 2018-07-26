@@ -46,15 +46,12 @@ public class WeatherBot extends TelegramLongPollingBot {
             String userName = weatherSubscription.getUserName();
             int period = weatherSubscription.getPeriod();
 
-            Runnable runnable = new Runnable() {
-                @Override
-                public void run() {
-                    List<String> weatherChangeList = weatherService.getWeatherChangeMessages(city, period, userId);
-                    if (weatherChangeList.size() != 0){
-                        sendMessagesAboutWeatherChange(weatherChangeList, userId, userName);
-                    }
-
+            Runnable runnable = () -> {
+                List<String> weatherChangeList = weatherService.getWeatherChangeMessages(city, period, userId);
+                if (weatherChangeList.size() != 0){
+                    sendMessagesAboutWeatherChange(weatherChangeList, userId, userName);
                 }
+
             };
 
             notificationTimer.start(runnable, 0, 3600, TimeUnit.SECONDS);
@@ -129,12 +126,15 @@ public class WeatherBot extends TelegramLongPollingBot {
                 city = matcher.group(1);
                 period = Integer.parseInt(matcher.group(2));
 
-                subscribeToNotifications(chatId, messageId, userId, city, period, userName);
+                boolean notificationAdded = subscribeToNotifications(chatId, messageId, userId, city, period, userName);
 
-                List<String> weatherChangeList = weatherService.getWeatherChangeMessages(city, period, userId);
-                if (weatherChangeList.size() != 0){
-                    sendMessagesAboutWeatherChange(weatherChangeList, chatId, userName);
+                if (notificationAdded){
+                    List<String> weatherChangeList = weatherService.getWeatherChangeMessages(city, period, userId);
+                    if (weatherChangeList.size() != 0){
+                        sendMessagesAboutWeatherChange(weatherChangeList, chatId, userName);
+                    }
                 }
+
             } else {
                 sendMessageAboutNotification(chatId, messageId, false);
             }
@@ -168,7 +168,7 @@ public class WeatherBot extends TelegramLongPollingBot {
         }
     }
 
-    private void subscribeToNotifications(Long chatId, Integer messageId, Integer userId, String city, Integer period, String userName){
+    private boolean subscribeToNotifications(Long chatId, Integer messageId, Integer userId, String city, Integer period, String userName){
         boolean notificationAdded = false;
 
         try {
@@ -178,6 +178,7 @@ public class WeatherBot extends TelegramLongPollingBot {
             e.printStackTrace();
         }
         sendMessageAboutNotification(chatId, messageId, notificationAdded);
+        return notificationAdded;
     }
 
     private void sendMessageAboutNotification(Long chatId, Integer messageId, boolean notificationAdded){
@@ -188,7 +189,7 @@ public class WeatherBot extends TelegramLongPollingBot {
         if (notificationAdded){
             text = "Вы были успешно подписаны на уведомления об изменениях погоды";
         } else {
-            text = "С подпиской на уведомления возникли проблемы. Пожалуйста, проверьте правильность введённых данных";
+            text = "С подпиской на уведомления возникли проблемы. Пожалуйста, проверьте правильность введённых данных. Пример: /subscribe Санкт-Петербург,1. После этого вы будете получать уведомления об изменениях погоды в городе Санкт-Петербург с периодом времени в 1 час. Для каждого города можно подписаться на уведомления только один раз";
         }
         sendMessage.setText(text);
         try {
@@ -203,7 +204,7 @@ public class WeatherBot extends TelegramLongPollingBot {
         SendMessage sendMessage = new SendMessage();
         sendMessage.setChatId(chatId);
         sendMessage.setReplyToMessageId(messageId);
-        String helpText = "Пожалуйста, выберите город и период уведомления. Пример: /subscribe Санкт-Петербург,1. После этого вы будете получать уведомления об изменениях погоды в городе Санкт-Петербург с периодом времени в 1 час";
+        String helpText = "Пожалуйста, задайте город и период уведомления. Пример: /subscribe Санкт-Петербург,1. После этого вы будете получать уведомления об изменениях погоды в городе Санкт-Петербург с периодом времени в 1 час";
         sendMessage.setText(helpText);
         try {
             execute(sendMessage);
@@ -219,11 +220,10 @@ public class WeatherBot extends TelegramLongPollingBot {
         Integer messageId = startMessage.getMessageId();
         ReplyKeyboardMarkup replyKeyboardMarkup = getKeybord();
         SendMessage startSendMessage = new SendMessage();
-        startSendMessage.enableMarkdown(true);
         startSendMessage.setChatId(chatId);
         startSendMessage.setReplyToMessageId(messageId);
         startSendMessage.setReplyMarkup(replyKeyboardMarkup);
-        startSendMessage.setText("Пожалуйста, выберите команду");
+        startSendMessage.setText("Чтобы начать работу с ботом, введите нужную команду или выберите её на клавиатуре");
         try {
             execute(startSendMessage);
         } catch (TelegramApiException e) {
